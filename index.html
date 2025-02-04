@@ -26,34 +26,48 @@
 
                 let nodes = new vis.DataSet();
                 let edges = new vis.DataSet();
-                let addedNodes = new Set();  // Keep track of added node IDs
+                let nodeMap = {}; // Stores unique node IDs
+
+                function getNodeId(elementId) {
+                    if (!nodeMap[elementId]) {
+                        nodeMap[elementId] = Object.keys(nodeMap).length + 1; // Assign unique ID
+                    }
+                    return nodeMap[elementId];
+                }
 
                 rawData.forEach(record => {
                     // Extract Course (c)
-                    if (record.c && !addedNodes.has(record.c.identity)) {
-                        nodes.add({
-                            id: record.c.identity,
-                            label: record.c.properties.code || record.c.properties.name,
-                            group: record.c.labels[0]
-                        });
-                        addedNodes.add(record.c.identity);
+                    if (record.c) {
+                        let nodeId = getNodeId(record.c.elementId);
+                        if (!nodes.get(nodeId)) {
+                            nodes.add({
+                                id: nodeId,
+                                label: record.c.properties.code || record.c.properties.name,
+                                group: record.c.labels[0]
+                            });
+                        }
                     }
 
                     // Extract Learning Objective or another Course (n)
-                    if (record.n && !addedNodes.has(record.n.identity)) {
-                        nodes.add({
-                            id: record.n.identity,
-                            label: record.n.properties.code || record.n.properties.text || record.n.properties.name,
-                            group: record.n.labels[0]
-                        });
-                        addedNodes.add(record.n.identity);
+                    if (record.n) {
+                        let nodeId = getNodeId(record.n.elementId);
+                        if (!nodes.get(nodeId)) {
+                            nodes.add({
+                                id: nodeId,
+                                label: record.n.properties.code || record.n.properties.text || record.n.properties.name,
+                                group: record.n.labels[0]
+                            });
+                        }
                     }
 
                     // Extract Relationships (r)
                     if (record.r) {
+                        let fromId = getNodeId(record.r.startNodeElementId);
+                        let toId = getNodeId(record.r.endNodeElementId);
+
                         edges.add({
-                            from: record.r.start,
-                            to: record.r.end,
+                            from: fromId,
+                            to: toId,
                             label: record.r.type
                         });
                     }
@@ -80,5 +94,6 @@
     </script>
 </body>
 </html>
+
 
 
