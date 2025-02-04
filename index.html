@@ -5,15 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knowledge Graph</title>
   <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    svg {
+      width: 100vw;
+      height: 100vh;
+      border: 1px solid #ddd;
+    }
+    .node {
+      fill: steelblue;
+      stroke: #fff;
+      stroke-width: 1.5px;
+    }
+    .link {
+      stroke: #999;
+      stroke-opacity: 0.6;
+    }
+  </style>
 </head>
 <body>
-  <svg width="800" height="600"></svg>
+  <svg></svg>
 
   <script>
-    d3.json("https://raw.githubusercontent.com/swoodeadlock/CLOs/main/CLOs.json")
-      .then(function(graph) {
-        console.log(graph); // Use D3.js to visualize it here
+    // Load JSON Data
+    d3.json("https://raw.githubusercontent.com/swoodeadlock/CLOs/main/CLOs.json").then(function(graph) {
+      console.log("Graph data loaded:", graph); // Debugging log
+
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      const svg = d3.select("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+      // Sample force simulation
+      const simulation = d3.forceSimulation(graph)
+        .force("charge", d3.forceManyBody().strength(-200))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collision", d3.forceCollide().radius(30));
+
+      // Add nodes
+      const nodes = svg.selectAll("circle")
+        .data(graph)
+        .enter().append("circle")
+        .attr("class", "node")
+        .attr("r", 10)
+        .call(d3.drag()
+          .on("start", dragStarted)
+          .on("drag", dragged)
+          .on("end", dragEnded));
+
+      // Update node positions
+      simulation.on("tick", () => {
+        nodes.attr("cx", d => d.x)
+             .attr("cy", d => d.y);
       });
+
+      // Drag functions
+      function dragStarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+
+      function dragEnded(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+    });
   </script>
 </body>
 </html>
