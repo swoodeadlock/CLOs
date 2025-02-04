@@ -26,24 +26,27 @@
 
                 let nodes = new vis.DataSet();
                 let edges = new vis.DataSet();
+                let addedNodes = new Set();  // Keep track of added node IDs
 
                 rawData.forEach(record => {
                     // Extract Course (c)
-                    if (record.c) {
+                    if (record.c && !addedNodes.has(record.c.identity)) {
                         nodes.add({
                             id: record.c.identity,
                             label: record.c.properties.code || record.c.properties.name,
                             group: record.c.labels[0]
                         });
+                        addedNodes.add(record.c.identity);
                     }
 
-                    // Extract Learning Objective or Course (n)
-                    if (record.n) {
+                    // Extract Learning Objective or another Course (n)
+                    if (record.n && !addedNodes.has(record.n.identity)) {
                         nodes.add({
                             id: record.n.identity,
                             label: record.n.properties.code || record.n.properties.text || record.n.properties.name,
                             group: record.n.labels[0]
                         });
+                        addedNodes.add(record.n.identity);
                     }
 
                     // Extract Relationships (r)
@@ -77,6 +80,5 @@
     </script>
 </body>
 </html>
-
 
 
