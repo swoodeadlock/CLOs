@@ -15,7 +15,7 @@
 </head>
 <body>
     <h2>VUIM Course Knowledge Graph</h2>
-    <p>Click nodes to explore courses and their relationships.</p>
+    <p>Click nodes to expand/collapse learning objectives.</p>
     <div id="network"></div>
 
     <script>
@@ -27,6 +27,7 @@
                 let nodes = new vis.DataSet();
                 let edges = new vis.DataSet();
                 let nodeMap = {}; // Unique ID mapping
+                let fullTextMap = {}; // Stores full text for toggle
 
                 function getNodeId(elementId) {
                     if (!nodeMap[elementId]) {
@@ -41,19 +42,24 @@
                         if (!nodes.get(nodeId)) {
                             nodes.add({
                                 id: nodeId,
-                                label: breakText(record.c.properties.code || record.c.properties.name, 25),
+                                label: record.c.properties.code || record.c.properties.name,
                                 group: record.c.labels[0],
-                                font: { size: 14 }
+                                font: { size: 18 } // Increased font size for course titles
                             });
                         }
                     }
 
                     if (record.n) {
                         let nodeId = getNodeId(record.n.elementId);
+                        let fullText = record.n.properties.code || record.n.properties.text || record.n.properties.name || "";
+                        let shortText = truncateText(fullText, 6);
+
+                        fullTextMap[nodeId] = { full: fullText, short: shortText, isFull: false };
+
                         if (!nodes.get(nodeId)) {
                             nodes.add({
                                 id: nodeId,
-                                label: breakText(record.n.properties.code || record.n.properties.text || record.n.properties.name, 25),
+                                label: shortText,
                                 group: record.n.labels[0],
                                 font: { size: 12 }
                             });
@@ -101,15 +107,29 @@
                     }
                 };
 
-                new vis.Network(container, graphData, options);
+                const network = new vis.Network(container, graphData, options);
+
+                // Toggle full/short text on click
+                network.on("click", function(params) {
+                    if (params.nodes.length > 0) {
+                        let nodeId = params.nodes[0];
+                        if (fullTextMap[nodeId]) {
+                            let node = nodes.get(nodeId);
+                            fullTextMap[nodeId].isFull = !fullTextMap[nodeId].isFull;
+                            node.label = fullTextMap[nodeId].isFull ? fullTextMap[nodeId].full : fullTextMap[nodeId].short;
+                            nodes.update(node);
+                        }
+                    }
+                });
+
             } catch (error) {
                 console.error("Error loading or processing JSON:", error);
             }
         }
 
-        function breakText(text, maxLength) {
+        function truncateText(text, words) {
             if (!text) return "";
-            return text.replace(new RegExp(`(.{1,${maxLength}})(\\s|$)`, "g"), "$1\n").trim();
+            return text.split(" ").slice(0, words).join(" ") + "…";
         }
 
         window.onload = loadGraph;
