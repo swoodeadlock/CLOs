@@ -15,7 +15,7 @@
 </head>
 <body>
     <h2>VUIM Course Knowledge Graph</h2>
-    <p>Click nodes to expand/collapse learning objectives.</p>
+    <p>Click nodes to zoom in and reveal details.</p>
     <div id="network"></div>
 
     <script>
@@ -26,8 +26,8 @@
 
                 let nodes = new vis.DataSet();
                 let edges = new vis.DataSet();
-                let nodeMap = {}; // Unique ID mapping
-                let fullTextMap = {}; // Stores full text for toggle
+                let nodeMap = {}; 
+                let fullTextMap = {}; 
 
                 function getNodeId(elementId) {
                     if (!nodeMap[elementId]) {
@@ -39,20 +39,26 @@
                 rawData.forEach(record => {
                     if (record.c) {
                         let nodeId = getNodeId(record.c.elementId);
+                        let courseCode = record.c.properties.code;
+                        let courseName = record.c.properties.name;
+                        fullTextMap[nodeId] = { full: courseName, short: courseCode, isFull: false };
+
                         if (!nodes.get(nodeId)) {
                             nodes.add({
                                 id: nodeId,
-                                label: record.c.properties.code || record.c.properties.name,
+                                label: courseCode, 
                                 group: record.c.labels[0],
-                                font: { size: 18 } // Increased font size for course titles
+                                font: { size: 18 }, 
+                                shape: "dot",
+                                size: 30 // Bigger course dots
                             });
                         }
                     }
 
                     if (record.n) {
                         let nodeId = getNodeId(record.n.elementId);
-                        let fullText = record.n.properties.code || record.n.properties.text || record.n.properties.name || "";
-                        let shortText = truncateText(fullText, 6);
+                        let fullText = record.n.properties.text || record.n.properties.name || "";
+                        let shortText = truncateText(fullText, 3); 
 
                         fullTextMap[nodeId] = { full: fullText, short: shortText, isFull: false };
 
@@ -96,7 +102,6 @@
                     },
                     nodes: { 
                         shape: "dot", 
-                        size: 20, 
                         borderWidth: 1, 
                         font: { face: "Arial", align: "center" }
                     },
@@ -109,15 +114,24 @@
 
                 const network = new vis.Network(container, graphData, options);
 
-                // Toggle full/short text on click
+                // Zoom-in and toggle labels on click
                 network.on("click", function(params) {
                     if (params.nodes.length > 0) {
                         let nodeId = params.nodes[0];
+
+                        // Toggle full/short text for courses and learning objectives
                         if (fullTextMap[nodeId]) {
                             let node = nodes.get(nodeId);
                             fullTextMap[nodeId].isFull = !fullTextMap[nodeId].isFull;
                             node.label = fullTextMap[nodeId].isFull ? fullTextMap[nodeId].full : fullTextMap[nodeId].short;
                             nodes.update(node);
+
+                            // Zoom-in effect
+                            let focusOptions = {
+                                scale: fullTextMap[nodeId].isFull ? 1.5 : 1.0, 
+                                animation: { duration: 500, easingFunction: "easeInOutQuad" }
+                            };
+                            network.focus(nodeId, focusOptions);
                         }
                     }
                 });
@@ -136,6 +150,5 @@
     </script>
 </body>
 </html>
-
 
 
